@@ -29,6 +29,20 @@ fetch(chrome.runtime.getURL('popup.html'))
     let buttonIsClicked = false;
     let interval = null;
 
+
+    // create a overlay that disable scrolling
+    const overlay = document.createElement('div');
+    overlay.style.position = 'fixed';
+    overlay.style.top = '0';
+    overlay.style.left = '0';
+    overlay.style.width = '100%';
+    overlay.style.height = '100%';
+    overlay.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+    overlay.style.zIndex = '999';
+    overlay.style.display = 'none';
+    document.body.appendChild(overlay);
+
+
     document.getElementById('search-button').addEventListener('click', () => {
       const searchButton = document.getElementById('search-button');
       buttonIsClicked = !buttonIsClicked;
@@ -36,10 +50,14 @@ fetch(chrome.runtime.getURL('popup.html'))
       if (!buttonIsClicked) {
         searchButton.textContent = "Iniciar Busca";
         searchButton.style.backgroundColor = '#E11D4B';
+        overlay.style.display = 'none';
+        document.body.style.overflow = 'auto';
         clearInterval(interval);
         return;
       }
 
+      document.body.style.overflow = 'hidden';
+      overlay.style.display = 'block';
       searchButton.textContent = "Parar";
       searchButton.style.backgroundColor = 'orange';
       const sliderValue = document.getElementById('slider')?.value;
@@ -47,11 +65,18 @@ fetch(chrome.runtime.getURL('popup.html'))
       const operate = () => {
         const spans = document.querySelectorAll('span');
         const spansArray = Array.from(spans);
-        // const buttonMore = document.querySelectorAll('a[href="#"][role="button"]');
+        const buttonMore = document.querySelectorAll('a[href="#"][role="button"]');
         const heading = document.querySelectorAll('div[role="heading"]');
 
+        buttonMore.forEach(button => {
+          button.click();
+        })
+
         heading.forEach(header => {
-          header.parentNode.parentNode.parentNode.parentNode.style.display = 'none';
+          const valid = header.textContent.toLowerCase().includes('em');
+          if (valid) {
+            header.parentNode.parentNode.parentNode.parentNode.style.display = 'none';
+          }
         });
 
         const adsHeaders = spansArray.filter(span => span.textContent.toLowerCase().includes('identificação'));
@@ -103,8 +128,7 @@ fetch(chrome.runtime.getURL('popup.html'))
           container.style.display = 'block';
           container.style.padding = '0px'
           container.style.overflow = 'hidden'
-
-          container.firstChild.style.maxHeight = '480px'
+          container.firstChild.style.height = '480px'
           container.firstChild.style.overflow = 'hidden'
           container.firstChild.style.border = '2px solid #E11D4B'
         });
