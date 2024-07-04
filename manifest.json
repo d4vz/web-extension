@@ -3,15 +3,20 @@
   "name": "Contador de Anúncios",
   "version": "1.0",
   "description": "Conta quantos anúncios foram encontrados com uma determinado número no Facebook Ads",
-  "permissions": ["activeTab", "scripting", "storage"],
+  "permissions": ["activeTab", "scripting", "storage", "windows"],
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
       "js": ["content.js"]
     }
   ],
+  "web_accessible_resources": [
+    {
+      "resources": ["popup.html"],
+      "matches": ["<all_urls>"]
+    }
+  ],
   "action": {
-    "default_popup": "popup.html",
     "default_icon": {
       "16": "icon.png"
     }
