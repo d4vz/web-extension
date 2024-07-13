@@ -8,7 +8,6 @@ const createPopup = (inject_document, data) => {
   popup.style.zIndex = '9000000000000000000';
   popup.style.width = '100%';
   popup.style.display = 'flex';
-  popup.style.justifyContent = 'space-between';
   popup.style.alignItems = 'center';
   popup.style.backgroundColor = "#0C0A09";
   popup.style.padding = '16px';
@@ -28,17 +27,14 @@ const createRegisterButton = (popup) => {
   registerButton.style.display = 'block';
   registerButton.style.fontWeight = 'bold';
   registerButton.style.fontSize = '16px';
+  registerButton.style.marginLeft = "auto";
   popup.appendChild(registerButton);
   return registerButton;
 }
 
-const hideSliderAndSearchButton = (inject_document) => {
-  const slider = inject_document.getElementById('slider');
-  const sliderValue = inject_document.getElementById('slider-value');
-  const searchButton = inject_document.getElementById('search-button');
-  slider.style.display = 'none';
-  sliderValue.style.display = 'none';
-  searchButton.style.display = 'none';
+const hideDefaultActions = (inject_document) => {
+  const container = inject_document.getElementById('input-container')
+  container.style.display = 'none';
 }
 
 const getContainerParent = (span) => {
@@ -52,11 +48,17 @@ const getAdsHeaders = (inject_document) => {
 }
 
 const clickInMoreButton = (inject_document) => {
-  const buttonMore = inject_document.querySelectorAll('a[href="#"][role="button"]');
-  buttonMore.forEach(button => {
-    button.click();
-  })
-}
+  const switchElement = inject_document.getElementById('toggle-more-button');
+  if (switchElement && switchElement.checked) {
+    const buttonMore = inject_document.querySelectorAll('a[href="#"][role="button"]');
+    setTimeout(() => {
+      buttonMore.forEach(button => {
+        button.click();
+      });
+    }, 1500);
+  }
+};
+
 
 const omitHeadings = (inject_document) => {
   const headings = inject_document.querySelectorAll('div[role="heading"]');
@@ -68,18 +70,33 @@ const omitHeadings = (inject_document) => {
   });
 }
 
+const isActive = (container) => {
+  const words = ['ativo', 'inativo']
+  const spans = container.querySelectorAll('span');
+  const spansArray = Array.from(spans);
+  const span = spansArray.find(span => words.includes(span.textContent.toLowerCase()));
+  if (!span) return false;
+  return span.textContent.toLowerCase() === 'ativo';
+}
+
 const operate = (inject_document) => {
   const adsHeaders = getAdsHeaders(inject_document);
   clickInMoreButton(inject_document)
   omitHeadings(inject_document)
 
+  const sliderValue = inject_document.getElementById('slider').value;
+  const showInactive = inject_document.getElementById('toggle-inactive').checked;
+
   adsHeaders.forEach(header => {
     const container = getContainerParent(header);
     const regex = /(\d+)\s*(?:an[úu]ncios?|anuncios?)/i;
-
     const adsText = container.querySelector('span strong');
-    const adOwner = container.querySelector('a span');
+    const adIsActive = isActive(container);
 
+    if (!showInactive && !adIsActive) {
+      container.style.display = 'none';
+      return;
+    }
 
     if (!adsText) {
       container.style.display = 'none';
@@ -114,13 +131,10 @@ const operate = (inject_document) => {
       return;
     }
 
-    const sliderValue = inject_document.getElementById('slider').value;
-
     if (number < Number(sliderValue)) {
       container.style.display = 'none';
       return;
     }
-
 
     adsText.style.color = '#E11D4B';
     container.style.display = 'block';
@@ -138,11 +152,10 @@ fetch(chrome.runtime.getURL('popup.html'))
     const popupDiv = createPopup(document, data);
     const urlSearchParams = new URLSearchParams(window.location.search);
     const viewAllPageId = urlSearchParams.get('view_all_page_id');
-    let buttonIsClicked = false;
     let observer = null;
 
     if (viewAllPageId) {
-      hideSliderAndSearchButton(document);
+      hideDefaultActions(document);
       const registerButton = createRegisterButton(popupDiv);
       registerButton.addEventListener('click', () => {
         const allUrl = window.location.href;
@@ -167,26 +180,23 @@ fetch(chrome.runtime.getURL('popup.html'))
       document.getElementById('slider-value').textContent = sliderValue;
     });
 
-    document.getElementById('search-button').addEventListener('click', () => {
-      const searchButton = document.getElementById('search-button');
-      buttonIsClicked = !buttonIsClicked;
+    const toggleInactive = document.getElementById('toggle-inactive');
+    const activeStatus = urlSearchParams.get('active_status');
 
-      if (!buttonIsClicked) {
-        searchButton.textContent = "Iniciar Busca";
-        searchButton.style.backgroundColor = '#E11D4B';
+    if (activeStatus === 'active') {
+      toggleInactive.checked = false;
+    } else {
+      toggleInactive.checked = true;
+    }
 
-        if (observer) {
-          observer.disconnect();
-        }
-
-        window.scrollTo(0, 0);
-        operate(document);
-        return;
-      }
-
-      searchButton.textContent = "Parar";
-      searchButton.style.backgroundColor = 'orange';
-      startObservation();
+    document.getElementById('toggle-inactive').addEventListener('change', () => {
       operate(document);
     });
+
+    document.getElementById('toggle-more-button').addEventListener('change', () => {
+      clickInMoreButton(document);
+    })
+
+    operate(document);
+    startObservation();
   });
